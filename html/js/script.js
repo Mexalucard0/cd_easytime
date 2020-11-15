@@ -27,12 +27,12 @@ async function generateStars(){
 }
 function closeUI(){
     var xhr = new XMLHttpRequest();
-    xhr.open("POST", "http://cd_easytime/close", true);                                                                                                                                                                                                                                                                                                                                      
+    xhr.open("POST", "https://cd_easytime/close", true);                                                                                                                                                                                                                                                                                                                                      
     xhr.send(JSON.stringify({}));
 }
 function easyTimeChange(values){
     var xhr = new XMLHttpRequest();
-    xhr.open("POST", "http://cd_easytime/change", true);                                                                                                                                                                                                                                                                                                                                      
+    xhr.open("POST", "https://cd_easytime/change", true);                                                                                                                                                                                                                                                                                                                                      
     xhr.send(JSON.stringify(values));
 }
 function convertTime(time){
