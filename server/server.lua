@@ -20,15 +20,10 @@ local LastGroup = Config.WeatherGroups[1]
 
 RegisterCommand(Config.Command, function(source)
     local _source = source
-    if Config.UseESX then
-        if  Config.ESX_perms[ESX.GetPlayerFromId(_source).getGroup()] ~= nil then
-            TriggerClientEvent('cd_easytime:OpenUI', _source, {weather = Weather, time = Hours, mins = Mins, dynamic = Dynamic, blackout = Blackout, freeze = FreezeTime})
-        else
-            Notification(_source, Config.Locales[Config.Language]['invalid_permissions'])
-        end
-    else
-        --add your own permissions check here if not using ESX otherwise anyone can use this command.
+    if PermissionsCheck(_source) then
         TriggerClientEvent('cd_easytime:OpenUI', _source, {weather = Weather, time = Hours, mins = Mins, dynamic = Dynamic, blackout = Blackout, freeze = FreezeTime})
+    else
+        Notification(_source, Config.Locales[Config.Language]['invalid_permissions'])
     end
 end)
 
@@ -44,45 +39,50 @@ end)
 
 RegisterServerEvent('cd_easytime:ForceUpdate')
 AddEventHandler('cd_easytime:ForceUpdate', function(data)
-    if data.hours ~= nil then
-        Hours = tonumber(data.hours)
-    end
-    if data.weather ~= nil and Config.DynamicWeather then
-        Weather = tostring(data.weather)
-        local shouldstop = false
-        TimesChanged = 0
-        LastWeatherTable = nil
-        LastWeatherTable = {}
-        for k, v in pairs(Config.WeatherGroups) do
-            if shouldstop then
-                break
-            end
-            for k, w in pairs(v) do
-                if w == Weather then
-                    shouldstop = true
-                    Group = v
+    local _source = source
+    if PermissionsCheck(_source) then
+        if data.hours ~= nil then
+            Hours = tonumber(data.hours)
+        end
+        if data.weather ~= nil and Config.DynamicWeather then
+            Weather = tostring(data.weather)
+            local shouldstop = false
+            TimesChanged = 0
+            LastWeatherTable = nil
+            LastWeatherTable = {}
+            for k, v in pairs(Config.WeatherGroups) do
+                if shouldstop then
                     break
                 end
+                for k, w in pairs(v) do
+                    if w == Weather then
+                        shouldstop = true
+                        Group = v
+                        break
+                    end
+                end
+            end
+            for k, n in pairs(Group) do
+                if n == Weather then
+                    break
+                end
+                TimesChanged = TimesChanged+1
+                LastWeatherTable[n] = n
             end
         end
-        for k, n in pairs(Group) do
-            if n == Weather then
-                break
-            end
-            TimesChanged = TimesChanged+1
-            LastWeatherTable[n] = n
+        if data.dynamic ~= nil then
+            Dynamic = data.dynamic
         end
+        if data.blackout ~= nil then
+            Blackout = data.blackout
+        end
+        if data.freeze ~= nil then
+            FreezeTime = data.freeze
+        end
+        TriggerClientEvent('cd_easytime:ForceUpdate', -1, {weather = Weather, hours = tonumber(data.hours), mins = Mins, dynamic = Dynamic, blackout = Blackout, freeze = FreezeTime})
+    else
+        DropPlayer(source, 'Why do you do this?')
     end
-    if data.dynamic ~= nil then
-        Dynamic = data.dynamic
-    end
-    if data.blackout ~= nil then
-        Blackout = data.blackout
-    end
-    if data.freeze ~= nil then
-        FreezeTime = data.freeze
-    end
-    TriggerClientEvent('cd_easytime:ForceUpdate', -1, {weather = Weather, hours = tonumber(data.hours), mins = Mins, dynamic = Dynamic, blackout = Blackout, freeze = FreezeTime})
 end)
 
 Citizen.CreateThread(function()
@@ -177,4 +177,17 @@ function ChooseWeatherType()
     else
         return Config.WeatherGroups[result]
     end 
+end
+
+function PermissionsCheck(source)
+    if Config.UseESX then
+        if Config.ESX_perms[ESX.GetPlayerFromId(source).getGroup()] ~= nil then
+            return true
+        else
+            return false
+        end
+    else
+        --add your own permissions check here if not using ESX otherwise anyone can use this command.
+        return true
+    end
 end
