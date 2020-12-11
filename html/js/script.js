@@ -196,7 +196,16 @@ $("#easytime-button-change").on("click", function() {
     } else easyTimeChange(values);
     
 })
+$("#easytime-button-save").on("click", () => {
+    var xhr = new XMLHttpRequest();
+    xhr.open("POST", "https://cd_easytime/savesettings", true);                                                                                                                                                                                                                                                                                                                                      
+    xhr.send(JSON.stringify({ok:true}));
 
+    $("#easytime-button-save").html("...").attr("disabled", true);
+    setTimeout(() => {
+        $("#easytime-button-save").html("Save Settings").attr("disabled", false);
+    }, 1500);
+});
 $(document).ready(function() {
     $(function () {
         $('[data-toggle="tooltip"]').tooltip()

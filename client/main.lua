@@ -26,6 +26,7 @@ RegisterNetEvent('cd_easytime:PauseSync')
 AddEventHandler('cd_easytime:PauseSync', function(boolean)
     if boolean then
         PauseSync = true
+        ChangeWeather('EXTRASUNNY', Blackout)
     else
         PauseSync = false
         TriggerServerEvent('cd_easytime:SyncMe')
@@ -129,6 +130,10 @@ end)
 RegisterNUICallback('change', function(data)
     NUI_status = false
     TriggerServerEvent('cd_easytime:ForceUpdate', {weather = data.weather, hours = data.time, dynamic = data.dynamic, blackout = data.blackout, freeze = data.freeze})
+end)
+
+RegisterNUICallback('savesettings', function()
+    TriggerServerEvent('cd_easytime:SaveSettings')
 end)
 
 function CheckSnowSync(NewWeather)

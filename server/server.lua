@@ -1,6 +1,13 @@
 ESX = nil
-if Config.UseESX then
+vRP = nil
+vRPclient = nil
+if Config.Framework == 'esx' then
     TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
+elseif Config.Framework == 'vrp' then
+    local Proxy = module('vrp', 'lib/Proxy')
+    local Tunnel = module('vrp', 'lib/Tunnel')
+    vRP = Proxy.getInterface('vRP')
+    vRPclient = Tunnel.getInterface('vRP', 'chat_commands')
 end
 
 local Weather = 'CLEAR'
@@ -17,6 +24,7 @@ local HasTriggered = false
 local TimeCounter = 0
 local Group = Config.WeatherGroups[1]
 local LastGroup = Config.WeatherGroups[1]
+local SettingsLoaded = false
 
 RegisterCommand(Config.Command, function(source)
     local _source = source
@@ -81,12 +89,15 @@ AddEventHandler('cd_easytime:ForceUpdate', function(data)
         end
         TriggerClientEvent('cd_easytime:ForceUpdate', -1, {weather = Weather, hours = tonumber(data.hours), mins = Mins, dynamic = Dynamic, blackout = Blackout, freeze = FreezeTime})
     else
-        DropPlayer(source, 'Why do you do this?')
+        DropPlayer(_source, 'Why do you do this?')
     end
 end)
 
 Citizen.CreateThread(function()
     while true do
+        if not SettingsLoaded and Config.PersistentWeather then
+            LoadSettings()
+        end
         Citizen.Wait(Config.TimeCycleSpeed)
         if not FreezeTime then
             TimeCounter = TimeCounter+1
@@ -179,15 +190,42 @@ function ChooseWeatherType()
     end 
 end
 
+function LoadSettings()
+    SettingsLoaded = true
+    local settings = json.decode(LoadResourceFile(GetCurrentResourceName(),'./settings.txt'))
+    Weather = settings.weather
+    Hours = settings.hours
+    Mins = settings.mins
+    Dynamic = settings.dynamic
+    Blackout = settings.blackout
+    FreezeTime = settings.freeze
+end
+
+if Config.PersistentWeather then
+    RegisterServerEvent('cd_easytime:SaveSettings')
+    AddEventHandler('cd_easytime:SaveSettings', function()
+        local save = SaveResourceFile(GetCurrentResourceName(),'settings.txt',json.encode({weather = Weather, hours = Hours, mins = Mins, dynamic = Dynamic, blackout = Blackout, freeze = FreezeTime}),-1)
+        print('^3['..GetCurrentResourceName()..'] - Settings Saved^0')
+    end)
+end
+
 function PermissionsCheck(source)
-    if Config.UseESX then
+    if Config.Framework == 'esx' then
         if Config.ESX_perms[ESX.GetPlayerFromId(source).getGroup()] ~= nil then
             return true
         else
             return false
         end
-    else
-        --add your own permissions check here if not using ESX otherwise anyone can use this command.
+
+    elseif Config.Framework == 'vrp' then
+        if vRP.hasPermission({vRP.getUserId({source}), 'admin.announce'}) then 
+            return true
+        else
+            return false
+        end
+        
+    elseif Config.Framework == 'custom' then
+        --add your own permissions check here.
         return true
     end
 end
